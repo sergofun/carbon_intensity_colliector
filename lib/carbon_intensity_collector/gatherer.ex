@@ -39,21 +39,25 @@ defmodule CarbonIntensityCollector.Gatherer do
     check_for_updates(latest_timestamp, intensity)
   end
 
-  defp check_for_updates(nil, current_intensity) do
+  def check_for_updates(nil, current_intensity) do
     Logger.debug("First value: #{inspect(current_intensity)}}")
     insert_intensity(current_intensity)
   end
 
-  defp check_for_updates(latest_datetime, [%{"to" => to_datetime}])
+  def check_for_updates(latest_datetime, [%{"to" => to_datetime} | _])
        when latest_datetime == to_datetime do
     Logger.debug("This value has been already stored, skip it")
     :noting_to_do
   end
 
-  defp check_for_updates(latest_datetime, [%{"to" => to_datetime}]) do
+  def check_for_updates(latest_datetime, [%{"to" => to_datetime} | _]) do
     Logger.debug("Fill the gaps from #{inspect(latest_datetime)} to #{inspect(to_datetime)}")
 
+
+    # since Official Carbon Intensity API returns measure ended with from datetime as well
+    # we have to drop it because is has been already stored
     @carbon_intensity_api.get_intensity(latest_datetime, to_datetime)
+    |> Enum.drop(1)
     |> insert_intensity
   end
 
@@ -61,12 +65,12 @@ defmodule CarbonIntensityCollector.Gatherer do
     do:
       Repo.one(from(i in Co2EmissionSchema, order_by: [desc: i.id], limit: 1, select: i.datetime))
 
-  defp insert_intensity(data) do
+  def insert_intensity(data) do
     Enum.map(
       data,
-      fn %{"to" => datetime, "intensity" => %{"actual" => value}} ->
+      fn data_item ->
         %Co2EmissionSchema{}
-        |> Co2EmissionSchema.changeset(%{intensity: value, datetime: datetime})
+        |> Co2EmissionSchema.changeset(@carbon_intensity_api.extract_value(data_item))
         |> Repo.insert()
       end
     )
@@ -78,8 +82,13 @@ defmodule CarbonIntensityCollector.IntensityAPIAdapter do
     This module suggests common API for external CO2 emission values provider
   """
 
+  @type co2_value :: %{value: String.t(), datetime: String.t()}
+
   # Returns the list of decoded CO2 emission values for the specified period.
   @callback get_intensity(from :: String.t(), to :: String.t()) :: Jason.Encoder.List
+
+  # Returns CO2 emission value and datetime.
+  @callback extract_value(data :: map()) :: co2_value
 end
 
 defmodule CarbonIntensityCollector.IntensityAPIAdapter.External do
@@ -91,11 +100,33 @@ defmodule CarbonIntensityCollector.IntensityAPIAdapter.External do
 
   @co2_provider Application.get_env(:carbon_intensity_collector, :co2_provider)
 
+  require Logger
+
   def get_intensity(from \\ "", to \\ "") do
-    (@co2_provider <> from <> "/" <> to)
-    |> HTTPoison.get!()
-    |> Map.fetch!(:body)
-    |> Jason.decode!()
-    |> Map.fetch!("data")
+    with {:ok, %HTTPoison.Response{body: body, status_code: 200}} <- HTTPoison.get(@co2_provider <> "#{from}/#{to}"),
+         {:ok, decoded_body} <- Jason.decode(body),
+         {:ok, data} <- Map.fetch(decoded_body, "data") do
+
+      Logger.debug("Got: #{inspect(data)}")
+      data
+    else
+      {:ok, %HTTPoison.Response{body: _body, status_code: status_code}} ->
+        Logger.warn("Status code: #{status_code}")
+      {:error, %HTTPoison.Error{reason: reason}} ->
+        Logger.warn("Error: #{reason}")
+      {:error, %Jason.DecodeError{data: reason}}
+        Logger.warn("Jason decode error: #{reason}")
+      :error ->
+        Logger.warn("Malformed response")
+    end
   end
+
+  def extract_value(%{"to" => datetime, "intensity" => %{"actual" => value}}) do
+    %{intensity: value, datetime: datetime}
+  end
+
+  def extract_value(_) do
+    %{}
+  end
+
 end
