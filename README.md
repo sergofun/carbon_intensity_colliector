@@ -49,7 +49,7 @@ Also it will be good to have some metrics here. For example number of successful
 and requests duration.
 
 Since the maximum date range is limited to 14 days by data provider as an improvement we should detect
-situation when application downtime is more than 14 days.
+situation when application downtime is more than 14 days and inform somehow or use another API.
 
 It seems that CO2 emission data provider returns nil as actual intensity value for the latest measurement
 in case of GET /intensity/{from}/{to} API using, therefore data will be updated during next iteration.
