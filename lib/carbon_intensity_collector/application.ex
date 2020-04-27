@@ -5,10 +5,14 @@ defmodule CarbonIntensityCollector.Application do
 
   use Application
 
+  alias CarbonIntensityCollector.{Repo, Scheduler, Gatherer}
+
   def start(_type, _args) do
     children = [
-      # Starts a worker by calling: CarbonIntensityCollector.Worker.start_link(arg)
-      # {CarbonIntensityCollector.Worker, arg}
+      Repo,
+      Scheduler,
+      # perform data acquisition at start up
+      {Task, fn -> Gatherer.perform_data_acquisition() end}
     ]
 
     # See https://hexdocs.pm/elixir/Supervisor.html
