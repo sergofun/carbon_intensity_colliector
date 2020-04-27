@@ -71,10 +71,6 @@ defmodule CarbonIntensityCollector.Gatherer do
       end
     )
   end
-
-  #  defp carbon_intensity_api do
-  #    Application.get_env(:carbon_intensity_collector, :carbon_intensity_api)
-  #  end
 end
 
 defmodule CarbonIntensityCollector.IntensityAPIAdapter do
