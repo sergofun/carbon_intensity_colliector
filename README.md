@@ -32,7 +32,7 @@ To get started, run the following commands in the project folder:
 mix deps.get  # installs the dependencies
 mix ecto.create  # creates the database.
 mix ecto.migrate  # run the database migrations.
-mix run  # run the application.
+mix run --no-halt # run the application.
 ```
 
 ## Test
@@ -40,3 +40,8 @@ To run the tests, run the following command:
 ```shell
 mix test
 ```
+
+## Comments
+As a first improvement the testing procedure should be extended to launch
+web-server (for instance cowboy) as a CO2 emission data provider
+
