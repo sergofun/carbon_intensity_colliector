@@ -39,20 +39,19 @@ defmodule CarbonIntensityCollector.Gatherer do
     check_for_updates(latest_timestamp, intensity)
   end
 
-  def check_for_updates(nil, current_intensity) do
+  defp check_for_updates(nil, current_intensity) do
     Logger.debug("First value: #{inspect(current_intensity)}}")
     insert_intensity(current_intensity)
   end
 
-  def check_for_updates(latest_datetime, [%{"to" => to_datetime} | _])
+  defp check_for_updates(latest_datetime, [%{"to" => to_datetime} | _])
        when latest_datetime == to_datetime do
     Logger.debug("This value has been already stored, skip it")
     :noting_to_do
   end
 
-  def check_for_updates(latest_datetime, [%{"to" => to_datetime} | _]) do
+  defp check_for_updates(latest_datetime, [%{"to" => to_datetime} | _]) do
     Logger.debug("Fill the gaps from #{inspect(latest_datetime)} to #{inspect(to_datetime)}")
-
 
     # since Official Carbon Intensity API returns measure ended with from datetime as well
     # we have to drop it because is has been already stored
@@ -74,6 +73,22 @@ defmodule CarbonIntensityCollector.Gatherer do
         |> Repo.insert()
       end
     )
+  end
+end
+
+defmodule CarbonIntensityCollector.Metrics do
+  @moduledoc """
+    This module provides interface for application metrics
+    Current implementation suggests only logging response status
+  """
+  require Logger
+
+  def update(:status_code, value) do
+    Logger.info("status_code #{value}")
+  end
+
+  def update(other) do
+    Logger.warn("Unsupported metric #{inspect(other)}")
   end
 end
 
@@ -100,24 +115,34 @@ defmodule CarbonIntensityCollector.IntensityAPIAdapter.External do
 
   @co2_provider Application.get_env(:carbon_intensity_collector, :co2_provider)
 
+  alias CarbonIntensityCollector.Metrics
+
   require Logger
 
   def get_intensity(from \\ "", to \\ "") do
-    with {:ok, %HTTPoison.Response{body: body, status_code: 200}} <- HTTPoison.get(@co2_provider <> "#{from}/#{to}"),
+    with {:ok, %HTTPoison.Response{body: body, status_code: 200}} <-
+           HTTPoison.get(@co2_provider <> "#{from}/#{to}"),
          {:ok, decoded_body} <- Jason.decode(body),
          {:ok, data} <- Map.fetch(decoded_body, "data") do
-
+      Metrics.update(:status_code, 200)
       Logger.debug("Got: #{inspect(data)}")
       data
     else
       {:ok, %HTTPoison.Response{body: _body, status_code: status_code}} ->
-        Logger.warn("Status code: #{status_code}")
+        Metrics.update(:status_code, status_code)
+        Logger.warn("Status code11: #{status_code}")
+        []
+
       {:error, %HTTPoison.Error{reason: reason}} ->
         Logger.warn("Error: #{reason}")
-      {:error, %Jason.DecodeError{data: reason}}
+        []
+        {:error, %Jason.DecodeError{data: reason}}
         Logger.warn("Jason decode error: #{reason}")
+        []
+
       :error ->
         Logger.warn("Malformed response")
+        []
     end
   end
 
@@ -128,5 +153,4 @@ defmodule CarbonIntensityCollector.IntensityAPIAdapter.External do
   def extract_value(_) do
     %{}
   end
-
 end

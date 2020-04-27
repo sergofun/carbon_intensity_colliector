@@ -61,7 +61,7 @@ defmodule CarbonIntensityCollector.IntensityAPIAdapter.Dummy do
   defp generate_intensity_data(test)
        when test == :"test first value" or
               test == :"test the same value" or
-    test == :"test filling the gaps phase1" do
+              test == :"test filling the gaps phase1" do
     [
       %{
         "from" => "2020-04-27T08:30Z",
@@ -78,20 +78,6 @@ defmodule CarbonIntensityCollector.IntensityAPIAdapter.Dummy do
   defp generate_intensity_data(:"test malformed response") do
     [%{"from" => "2020-04-27T08:30Z", "to" => "2020-04-27T09:00Z", "intensity" => 999}]
   end
-
-#  defp generate_intensity_data(:"test filling the gaps phase1") do
-#    [
-#      %{
-#        "from" => "2020-04-27T09:00Z",
-#        "to" => "2020-04-27T09:30Z",
-#        "intensity" => %{
-#          "forecast" => 152,
-#          "actual" => 150,
-#          "index" => "low"
-#        }
-#      }
-#    ]
-#  end
 
   defp generate_intensity_data(:"test filling the gaps phase2") do
     [
