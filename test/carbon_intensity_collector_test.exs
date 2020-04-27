@@ -25,7 +25,8 @@ defmodule CarbonIntensityCollectorTest do
   end
 
   test "malformed response" do
-    catch_error(Gatherer.perform_data_acquisition())
+    Gatherer.perform_data_acquisition()
+    assert Repo.aggregate(Co2EmissionSchema, :count) == 0
   end
 
   test "filling the gaps" do
@@ -43,6 +44,14 @@ defmodule CarbonIntensityCollector.IntensityAPIAdapter.Dummy do
   @moduledoc false
   @behaviour CarbonIntensityCollector.IntensityAPIAdapter
 
+  def extract_value(%{"to" => datetime, "intensity" => %{"actual" => value}}) do
+    %{intensity: value, datetime: datetime}
+  end
+
+  def extract_value(_) do
+    %{}
+  end
+
   def get_intensity(), do: get_intensity(nil, nil)
 
   def get_intensity(_from, _to) do
@@ -51,7 +60,8 @@ defmodule CarbonIntensityCollector.IntensityAPIAdapter.Dummy do
 
   defp generate_intensity_data(test)
        when test == :"test first value" or
-              test == :"test the same value" do
+              test == :"test the same value" or
+    test == :"test filling the gaps phase1" do
     [
       %{
         "from" => "2020-04-27T08:30Z",
@@ -69,7 +79,21 @@ defmodule CarbonIntensityCollector.IntensityAPIAdapter.Dummy do
     [%{"from" => "2020-04-27T08:30Z", "to" => "2020-04-27T09:00Z", "intensity" => 999}]
   end
 
-  defp generate_intensity_data(:"test filling the gaps phase1") do
+#  defp generate_intensity_data(:"test filling the gaps phase1") do
+#    [
+#      %{
+#        "from" => "2020-04-27T09:00Z",
+#        "to" => "2020-04-27T09:30Z",
+#        "intensity" => %{
+#          "forecast" => 152,
+#          "actual" => 150,
+#          "index" => "low"
+#        }
+#      }
+#    ]
+#  end
+
+  defp generate_intensity_data(:"test filling the gaps phase2") do
     [
       %{
         "from" => "2020-04-27T09:00Z",
@@ -79,12 +103,7 @@ defmodule CarbonIntensityCollector.IntensityAPIAdapter.Dummy do
           "actual" => 150,
           "index" => "low"
         }
-      }
-    ]
-  end
-
-  defp generate_intensity_data(:"test filling the gaps phase2") do
-    [
+      },
       %{
         "from" => "2020-04-27T09:30Z",
         "to" => "2020-04-27T10:00Z",

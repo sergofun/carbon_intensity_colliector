@@ -43,5 +43,13 @@ mix test
 
 ## Comments
 As a first improvement the testing procedure should be extended to launch
-web-server (for instance cowboy) as a CO2 emission data provider
+web-server (for instance cowboy) as a CO2 emission data provider.
 
+Also it will be good to have some metrics here. For example number of successful/unsuccessful requests
+and requests duration.
+
+Since the maximum date range is limited to 14 days by data provider as an improvement we should detect
+situation when application downtime is more than 14 days.
+
+It seems that CO2 emission data provider returns nil as actual intensity value for the latest measurement
+in case of GET /intensity/{from}/{to} API using, therefore data will be updated during next iteration.
