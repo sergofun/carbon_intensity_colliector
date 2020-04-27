@@ -130,16 +130,14 @@ defmodule CarbonIntensityCollector.IntensityAPIAdapter.External do
     else
       {:ok, %HTTPoison.Response{body: _body, status_code: status_code}} ->
         Metrics.update(:status_code, status_code)
-        Logger.warn("Status code11: #{status_code}")
+        Logger.warn("Status code: #{status_code}")
         []
-
       {:error, %HTTPoison.Error{reason: reason}} ->
         Logger.warn("Error: #{reason}")
         []
-        {:error, %Jason.DecodeError{data: reason}}
+      {:error, %Jason.DecodeError{data: reason}}
         Logger.warn("Jason decode error: #{reason}")
         []
-
       :error ->
         Logger.warn("Malformed response")
         []
