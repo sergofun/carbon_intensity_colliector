@@ -25,5 +25,7 @@ config :carbon_intensity_collector, CarbonIntensityCollector.Scheduler,
        debug_logging: false,
        global: false,
        jobs: [
-         {"* * * * *",  {CarbonIntensityCollector.Gatherer, :perform_data_acquisition, []}},
+         {"*/30 * * * *",  {CarbonIntensityCollector.Gatherer, :perform_data_acquisition, []}},
        ]
+
+import_config "#{Mix.env}.exs"
