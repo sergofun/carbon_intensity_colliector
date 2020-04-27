@@ -1,4 +1,3 @@
-
 defmodule CarbonIntensityCollector.Application do
   # See https://hexdocs.pm/elixir/Application.html
   # for more information on OTP Applications
@@ -12,7 +11,7 @@ defmodule CarbonIntensityCollector.Application do
     children = [
       Repo,
       Scheduler,
-      #perform data acquisition at start up
+      # perform data acquisition at start up
       {Task, fn -> Gatherer.perform_data_acquisition() end}
     ]
 

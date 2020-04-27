@@ -3,5 +3,5 @@ defmodule CarbonIntensityCollector.Scheduler do
     Quantum scheduler for periodic CO2 emission requesting
   """
   use Quantum.Scheduler,
-      otp_app: :carbon_intensity_collector
+    otp_app: :carbon_intensity_collector
 end
